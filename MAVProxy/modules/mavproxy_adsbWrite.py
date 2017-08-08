@@ -1,15 +1,8 @@
 #!/usr/bin/env python
 '''
-Example Module
-Peter barker, September 2016
-
-This module simply serves as a starting point for your own MAVProxy module.
-
-1. copy this module sidewise (e.g. "cp mavproxy_example.py mavproxy_coolfeature.py"
-2. replace all instances of "example" with whatever your module should be called
-(e.g. "coolfeature")
-
-3. trim (or comment) out any functionality you do not need
+Module to write adsb signals to a text file
+From mavproxy call the function adsbWrite. That's it
+Creates a text file in the same folder you ran mavproxy.py from
 '''
 
 import os
@@ -25,15 +18,13 @@ from MAVProxy.modules.lib import mp_util
 from MAVProxy.modules.lib import mp_settings
 from mavproxy_adsb import ADSBVehicle
 
+#imports a bunch of stuff, most importantly the ADSBVehicle object which is used to create an object for every nearby plane
 class adsbWrite(mp_module.MPModule):
     def __init__(self, mpstate):
         """Initialise module"""
         super(adsbWrite, self).__init__(mpstate, "adsbWrite", "")
-        self.active_threat_ids = []  # holds all threat ids the vehicle is evading
-        self.threat_vehicles = {}
-        self.adsbWrite_settings = mp_settings.MPSettings(
-            [ ('verbose', bool, False),
-          ])
+        self.threat_vehicles = {} #dictionary containing all adsb vehicles nearby
+        self.adsbWrite_settings = mp_settings.MPSettings([ ('verbose', bool, False),])
         self.add_command('adsbWrite', self.cmd_adsbWrite, "adsbWrite module", ['status','set (LOGSETTING)'])
 
     def usage(self):
@@ -42,12 +33,17 @@ class adsbWrite(mp_module.MPModule):
 
     def cmd_adsbWrite(self, args):
         '''control behaviour of the module'''
+        self.remove_old_threats() #runs a function to clean up the dictionary
         f = open('adsbThreats.txt', 'w')
         for id in self.threat_vehicles:
-            if self.threat_vehicles[id].distance <= 100:
+            if self.threat_vehicles[id].distance <= 15:
                 f.write('id: %s lat: %s long: %s distance: %s \n' % (id,  self.threat_vehicles[id].state['lat']*1e-7,  self.threat_vehicles[id].state['lon']*1e-7,  self.threat_vehicles[id].distance))
-        f.close
-
+        f.close() #writes the id lat long and distance to a text file. can easily be changed
+    def remove_old_threats(self):
+        current_time = time.time()
+        for id in self.threat_vehicles.keys():
+            if current_time - self.threat_vehicles[id].update_time >= 10: #if it's been more than 10 seconds since getting a signal remove from dict
+                del self.threat_vehicles[id]
     def update_threat_distances(self, latlonalt):
         '''update the distance between threats and vehicle'''
         for id in self.threat_vehicles.keys():
@@ -64,7 +60,7 @@ class adsbWrite(mp_module.MPModule):
         '''get the horizontal distance between threat and vehicle'''
         (lat1, lon1, alt1) = latlonalt1
         (lat2, lon2, alt2) = latlonalt2
-
+        x1 = 
         lat1 = math.radians(lat1)
         lon1 = math.radians(lon1)
         lat2 = math.radians(lat2)
@@ -95,7 +91,7 @@ class adsbWrite(mp_module.MPModule):
                     # update the dict entry
                 self.threat_vehicles[id].update(m.to_dict())
         if m.get_type() == "GLOBAL_POSITION_INT":
-            self.update_threat_distances((m.lat*1e-7,  m.lon*1e-7,  m.alt*1e-3))
+            self.update_threat_distances((m.lat*1e-7,  m.lon*1e-7,  m.alt*1e-3)) #when a gps signal is received update distance to threats
 def init(mpstate):
     '''initialise module'''
     return writeADSB(mpstate)
