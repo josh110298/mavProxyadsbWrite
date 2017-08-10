@@ -36,7 +36,8 @@ class adsbWrite(mp_module.MPModule):
         self.remove_old_threats() #runs a function to clean up the dictionary
         f = open('adsbThreats.txt', 'w')
         for id in self.threat_vehicles:
-            if self.threat_vehicles[id].distance <= 15:
+            print(self.threat_vehicles[id].h_distance)
+            if self.threat_vehicles[id].h_distance <= 5:
                 f.write('id: %s lat: %s long: %s distance: %s \n' % (id,  self.threat_vehicles[id].state['lat']*1e-7,  self.threat_vehicles[id].state['lon']*1e-7,  self.threat_vehicles[id].distance))
         f.close() #writes the id lat long and distance to a text file. can easily be changed
     def remove_old_threats(self):
@@ -60,7 +61,6 @@ class adsbWrite(mp_module.MPModule):
         '''get the horizontal distance between threat and vehicle'''
         (lat1, lon1, alt1) = latlonalt1
         (lat2, lon2, alt2) = latlonalt2
-        x1 = 
         lat1 = math.radians(lat1)
         lon1 = math.radians(lon1)
         lat2 = math.radians(lat2)
